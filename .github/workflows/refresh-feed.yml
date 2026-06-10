@@ -1,0 +1,29 @@
+name: Refresh feed
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install feedparser cryptography
+      - name: Fetch, sign, publish
+        env:
+          MESHNEWS_PRIVATE_KEY: ${{ secrets.MESHNEWS_PRIVATE_KEY }}
+        run: python publish_feed.py
+      - name: Commit if changed
+        run: |
+          git config user.name "feed-bot"
+          git config user.email "feed-bot@users.noreply.github.com"
+          git add feed.json
+          git diff --cached --quiet || git commit -m "Refresh feed"
+          git push

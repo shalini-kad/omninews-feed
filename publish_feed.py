@@ -49,10 +49,14 @@ def bulletin_id(link: str) -> str:
 
 
 def make_bulletin(private_key, bid: str, ts: int, cat: str, headline: str) -> str:
-    headline = headline.replace("|", "-").strip()[:MAX_HEADLINE]
-    payload = f"{bid}|{ts}|{cat}|{headline}"
-    sig = base64.b64encode(private_key.sign(payload.encode())).decode()
-    return f"MN1|{payload}|{sig}"
+    # Must match gateway.py exactly: the signature covers the full message
+    # INCLUDING the "MN1|" prefix.
+    headline = headline.replace("|", "/").strip()
+    if len(headline) > MAX_HEADLINE:
+        headline = headline[: MAX_HEADLINE - 1] + "…"
+    message = f"MN1|{bid}|{ts}|{cat}|{headline}"
+    sig = base64.b64encode(private_key.sign(message.encode())).decode()
+    return f"{message}|{sig}"
 
 
 def main() -> None:
